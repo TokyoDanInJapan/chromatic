@@ -64,6 +64,12 @@ the physics. What the dial actually removes is the _defocus_ in flat areas, whic
 physical one — a real lens defocuses the whole frame, flat or not. It is here because the look is useful, and it is
 labelled honestly rather than sold as realism.
 
+It also has a limit worth knowing. The dial mixes two copies of the picture that are displaced by different amounts, and
+on detail finer than the fringe itself those two copies interfere and print a faint speckle. The mask is driven hard
+towards fully on or fully off to keep that rare, but a resolution chart at a large separation will still show it.
+Shortening the mask instead would cut the outer half of every fringe off, which is worse. Turn the dial down, or off, on
+very fine subjects.
+
 ## What must never be done
 
 - **Never scale a channel below 1.** A channel smaller than the frame uncovers the edge, and there is nothing behind it.

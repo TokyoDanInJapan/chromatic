@@ -263,9 +263,17 @@
 
     if (edges > 0 && filter) {
       // The mask has to be blurred by about as far as the fringe travels, or
-      // it will not cover the ground the fringe lands on.
+      // it will not cover the ground the fringe lands on. Shortening this
+      // reach to keep the mask crisp cuts the outer half of every fringe off,
+      // so the reach stays and the gain does the work instead.
       const reach = Math.max(1, spreadOf(lateral, w, h, cx, cy));
-      result = blendThrough(merged, source, edgeMask(source, w, h, reach, 6, edges), w, h);
+
+      // The gain is high on purpose. A mask that sits between 0 and 1 over a
+      // wide area mixes two copies of the picture that are displaced by
+      // different amounts, and on detail finer than the fringe those two
+      // copies interfere and print a speckle. A decisive mask mostly picks
+      // one copy or the other, which is the only way to avoid it.
+      result = blendThrough(merged, source, edgeMask(source, w, h, reach, 16, edges), w, h);
     }
 
     if (opts.diff) {
