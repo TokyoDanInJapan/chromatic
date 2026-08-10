@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>chromatic - chromatic aberration by magnifying each channel differently</title>
+    <meta
+      name="description"
+      content="Chromatic aberration in the browser, done as a real lens does it: each colour channel magnified by a different amount. Nothing is uploaded. The picture never leaves the page."
+    />
+    <meta name="theme-color" content="#101012" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="chromatic" />
+    <meta
+      property="og:description"
+      content="Chromatic aberration in the browser, done as a real lens does it: each colour channel magnified by a different amount, and defocused by a different amount."
+    />
+    <meta property="og:url" content="https://tokyodaninjapan.github.io/chromatic/" />
+    <!-- Absolute, because a card scraper does not resolve a relative image. -->
+    <meta property="og:image" content="https://tokyodaninjapan.github.io/chromatic/docs/screenshot.png" />
+    <meta property="og:image:alt" content="A lens test card with red and cyan fringes growing towards the corners." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20fill='%23101012'/%3E%3Ccircle%20cx='14'%20cy='16'%20r='8'%20fill='%23ff3b3b'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='8'%20fill='%2317c8b8'%20opacity='.75'/%3E%3Ccircle%20cx='18'%20cy='16'%20r='8'%20fill='%233b6bff'%20opacity='.6'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #101012;
+        --panel: #17171b;
+        --line: #2a2a31;
+        --ink: #e8e8ea;
+        --muted: #8d8d99;
+        --accent: #17b8c8;
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.55 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+
+      header {
+        padding: 1.4rem 1.5rem 0.9rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.15rem;
+        letter-spacing: 0.01em;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 68ch;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: 20rem minmax(0, 1fr);
+        gap: 1.25rem;
+        padding: 1.25rem 1.5rem 2.5rem;
+        align-items: start;
+      }
+
+      @media (max-width: 900px) {
+        main {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 0.5rem;
+        padding: 1rem;
+      }
+
+      .panel h2 {
+        margin: 0 0 0.75rem;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .panel + .panel {
+        margin-top: 1rem;
+      }
+
+      label.dial {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.2rem 0.5rem;
+        margin-bottom: 0.7rem;
+        font-size: 0.82rem;
+      }
+
+      label.dial output {
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      label.dial input[type='range'] {
+        grid-column: 1 / -1;
+        width: 100%;
+        accent-color: var(--accent);
+        margin: 0;
+      }
+
+      label.check {
+        display: flex;
+        gap: 0.5rem;
+        align-items: start;
+        margin-bottom: 0.6rem;
+        font-size: 0.82rem;
+      }
+
+      label.check input {
+        accent-color: var(--accent);
+        margin-top: 0.2rem;
+      }
+
+      label.check span small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.74rem;
+        line-height: 1.4;
+      }
+
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      button {
+        font: inherit;
+        font-size: 0.82rem;
+        color: var(--ink);
+        background: #23232a;
+        border: 1px solid var(--line);
+        border-radius: 0.3rem;
+        padding: 0.4rem 0.7rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        border-color: var(--accent);
+      }
+
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #06232a;
+        font-weight: 600;
+      }
+
+      #stage {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: #000 repeating-conic-gradient(#141418 0% 25%, #0d0d10 0% 50%) 0 0 / 24px 24px;
+        min-height: 20rem;
+        display: grid;
+        place-items: center;
+      }
+
+      #stage canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        cursor: crosshair;
+      }
+
+      #drop {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        color: var(--muted);
+        pointer-events: none;
+        padding: 2rem;
+      }
+
+      #stage.has-image #drop {
+        display: none;
+      }
+
+      #stage.dragging {
+        outline: 2px dashed var(--accent);
+        outline-offset: -6px;
+      }
+
+      dl.report {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.25rem 0.75rem;
+        margin: 0;
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      dl.report dt {
+        color: var(--muted);
+      }
+
+      dl.report dd {
+        margin: 0;
+      }
+
+      .warn {
+        color: #ffb454;
+      }
+
+      .swatch {
+        display: inline-block;
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        margin-right: 0.35rem;
+        vertical-align: 0.02rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>chromatic</h1>
+      <p>
+        Chromatic aberration, done the way a lens does it. Each colour channel is magnified by a slightly different
+        amount and focused by a slightly different amount, and the browser&rsquo;s own resampler and blur do the work.
+        Nothing here samples a pixel, and nothing is uploaded.
+      </p>
+    </header>
+
+    <main>
+      <div>
+        <section class="panel">
+          <h2>Image</h2>
+          <div class="row">
+            <button id="pick" class="primary">Choose image…</button>
+            <button id="sample">Use a test card</button>
+          </div>
+          <input id="file" type="file" accept="image/*" hidden />
+          <p style="margin: 0.7rem 0 0; color: var(--muted); font-size: 0.78rem">
+            Or drop one anywhere, or paste one from the clipboard. Nothing is uploaded. The picture never leaves the
+            page.
+          </p>
+        </section>
+
+        <section class="panel">
+          <h2>Lateral</h2>
+          <label class="dial">
+            <span>Separation</span><output id="out-lateral"></output>
+            <input id="lateral" type="range" min="0" max="150" step="1" value="40" />
+          </label>
+          <label class="dial">
+            <span>Optical centre, across</span><output id="out-cx"></output>
+            <input id="cx" type="range" min="0" max="100" step="1" value="50" />
+          </label>
+          <label class="dial">
+            <span>Optical centre, down</span><output id="out-cy"></output>
+            <input id="cy" type="range" min="0" max="100" step="1" value="50" />
+          </label>
+          <p style="margin: 0 0 0.6rem; color: var(--muted); font-size: 0.74rem">
+            Click the picture to put the centre there. The fringe is nothing at the centre and grows with distance from
+            it, which is what makes this aberration rather than a channel offset.
+          </p>
+        </section>
+
+        <section class="panel">
+          <h2>Longitudinal</h2>
+          <label class="dial">
+            <span>Defocus</span><output id="out-defocus"></output>
+            <input id="defocus" type="range" min="0" max="60" step="1" value="0" />
+          </label>
+          <label class="dial">
+            <span>Focused on</span><output id="out-focus"></output>
+            <input id="focus" type="range" min="0" max="100" step="1" value="39" />
+          </label>
+          <p style="margin: 0 0 0.6rem; color: var(--muted); font-size: 0.74rem">
+            Which wavelength the lens is focused on. Green sits at 39, not 50, because dispersion follows 1/&lambda;²
+            rather than the order of the channels.
+          </p>
+        </section>
+
+        <section class="panel">
+          <h2>Judgement</h2>
+          <label class="dial">
+            <span>Hold to edges</span><output id="out-edges"></output>
+            <input id="edges" type="range" min="0" max="100" step="1" value="0" />
+          </label>
+          <label class="check">
+            <input id="diff" type="checkbox" />
+            <span
+              >Show the difference
+              <small
+                >Show what changed rather than the result. Flat areas go black, because displacing a flat area returns
+                the same flat area.</small
+              ></span
+            >
+          </label>
+          <label class="check">
+            <input id="animate" type="checkbox" />
+            <span
+              >Animate
+              <small>Breathe the separation in and out. Stopped entirely if your system asks for reduced motion.</small>
+            </span>
+          </label>
+          <div class="row">
+            <button id="save">Save PNG</button>
+            <button id="reset">Reset dials</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>What happened</h2>
+          <dl class="report">
+            <dt>Image</dt>
+            <dd id="r-size">&mdash;</dd>
+            <dt><span class="swatch" style="background: #ff3b3b"></span>Red</dt>
+            <dd id="r-red">&mdash;</dd>
+            <dt><span class="swatch" style="background: #46d17a"></span>Green</dt>
+            <dd id="r-green">&mdash;</dd>
+            <dt><span class="swatch" style="background: #3b6bff"></span>Blue</dt>
+            <dd id="r-blue">&mdash;</dd>
+            <dt>Corner spread</dt>
+            <dd id="r-spread">&mdash;</dd>
+            <dt>Frame</dt>
+            <dd id="r-ms">&mdash;</dd>
+            <dt>Result</dt>
+            <dd id="r-status">&mdash;</dd>
+          </dl>
+        </section>
+      </div>
+
+      <div id="stage">
+        <canvas id="view" role="img" aria-label="The picture with chromatic aberration applied"></canvas>
+        <div id="drop">
+          <strong>Drop an image here</strong>
+          <span>or choose one, paste one, or use the test card</span>
+        </div>
+      </div>
+    </main>
+
+    <script src="chromatic.js"></script>
+    <script>
+      (function () {
+        'use strict';
+
+        const stage = document.getElementById('stage');
+        const view = document.getElementById('view');
+        const ctx = view.getContext('2d');
+        const file = document.getElementById('file');
+
+        const dials = {
+          lateral: document.getElementById('lateral'),
+          cx: document.getElementById('cx'),
+          cy: document.getElementById('cy'),
+          defocus: document.getElementById('defocus'),
+          focus: document.getElementById('focus'),
+          edges: document.getElementById('edges'),
+        };
+        const outs = {
+          lateral: document.getElementById('out-lateral'),
+          cx: document.getElementById('out-cx'),
+          cy: document.getElementById('out-cy'),
+          defocus: document.getElementById('out-defocus'),
+          focus: document.getElementById('out-focus'),
+          edges: document.getElementById('out-edges'),
+        };
+        const diffBox = document.getElementById('diff');
+        const animateBox = document.getElementById('animate');
+        const report = {
+          size: document.getElementById('r-size'),
+          red: document.getElementById('r-red'),
+          green: document.getElementById('r-green'),
+          blue: document.getElementById('r-blue'),
+          spread: document.getElementById('r-spread'),
+          ms: document.getElementById('r-ms'),
+          status: document.getElementById('r-status'),
+        };
+
+        const DEFAULTS = { lateral: 40, cx: 50, cy: 50, defocus: 0, focus: 39, edges: 0 };
+
+        /** The picture as loaded, at working size. Every frame is built from this. */
+        const source = document.createElement('canvas');
+        const sourceCtx = source.getContext('2d');
+        let loaded = false;
+
+        /** Big images cost resampling time three times over; this is plenty to look at. */
+        const MAX_SIDE = 1600;
+
+        const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (still) {
+          animateBox.checked = false;
+          animateBox.disabled = true;
+          animateBox.closest('label').querySelector('small').textContent =
+            'Disabled: your system asks for reduced motion.';
+        }
+
+        const filtered = Chromatic.supports().filter;
+        if (!filtered) {
+          dials.defocus.disabled = true;
+          dials.edges.disabled = true;
+        }
+
+        let frame = 0;
+        let breathing = 0;
+
+        function showDials() {
+          outs.lateral.textContent = (dials.lateral.value / 100).toFixed(2) + '%';
+          outs.cx.textContent = dials.cx.value + '%';
+          outs.cy.textContent = dials.cy.value + '%';
+          outs.defocus.textContent = (dials.defocus.value / 10).toFixed(1) + ' px';
+          outs.focus.textContent =
+            dials.focus.value < 20
+              ? 'red'
+              : dials.focus.value < 60
+                ? 'green'
+                : dials.focus.value < 85
+                  ? 'cyan'
+                  : 'blue';
+          outs.edges.textContent = dials.edges.value + '%';
+        }
+
+        function say(result, lateral) {
+          report.size.textContent = source.width + ' x ' + source.height;
+          const line = (key) =>
+            '×' +
+            result.scales[key].toFixed(4) +
+            (result.blurs[key] > 0.05 ? ', ' + result.blurs[key].toFixed(1) + ' px' : '');
+          report.red.textContent = line('r');
+          report.green.textContent = line('g');
+          report.blue.textContent = line('b');
+          report.spread.textContent = result.spread.toFixed(1) + ' px at the corner';
+          report.ms.textContent = result.ms.toFixed(1) + ' ms';
+          if (!filtered) {
+            report.status.textContent = 'no ctx.filter here, so no defocus';
+            report.status.className = 'warn';
+          } else if (lateral === 0 && Number(dials.defocus.value) === 0) {
+            report.status.textContent = 'both dials at zero, so nothing to see';
+            report.status.className = 'warn';
+          } else {
+            report.status.textContent = 'drawn';
+            report.status.className = '';
+          }
+        }
+
+        function render() {
+          if (!loaded) return;
+          const dialled = dials.lateral.value / 10000;
+          const lateral = animateBox.checked && !still ? dialled * (0.5 - 0.5 * Math.cos(breathing)) : dialled;
+          const result = Chromatic.aberrate(source, {
+            lateral,
+            cx: dials.cx.value / 100,
+            cy: dials.cy.value / 100,
+            defocus: dials.defocus.value / 10,
+            focus: dials.focus.value / 100,
+            edges: dials.edges.value / 100,
+            diff: diffBox.checked,
+          });
+          if (!result.ok) return;
+          if (view.width !== source.width || view.height !== source.height) {
+            view.width = source.width;
+            view.height = source.height;
+          }
+          ctx.drawImage(result.canvas, 0, 0);
+          say(result, lateral);
+        }
+
+        function tick() {
+          breathing += 0.03;
+          render();
+          frame = requestAnimationFrame(tick);
+        }
+
+        function pump() {
+          cancelAnimationFrame(frame);
+          frame = 0;
+          breathing = 0;
+          if (animateBox.checked && !still) frame = requestAnimationFrame(tick);
+          else render();
+        }
+
+        function useImage(bitmap) {
+          const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+          source.width = Math.max(8, Math.round(bitmap.width * scale));
+          source.height = Math.max(8, Math.round(bitmap.height * scale));
+          sourceCtx.clearRect(0, 0, source.width, source.height);
+          sourceCtx.drawImage(bitmap, 0, 0, source.width, source.height);
+          if (bitmap.close) bitmap.close();
+          loaded = true;
+          stage.classList.add('has-image');
+          render();
+        }
+
+        function load(blob) {
+          createImageBitmap(blob).then(useImage, () => {
+            report.status.textContent = 'that file would not decode as an image';
+            report.status.className = 'warn';
+          });
+        }
+
+        /**
+         * A lens test card. The targets are identical and evenly spread on
+         * purpose: lateral aberration is nothing at the optical centre and
+         * grows with distance from it, so the same target photographed in the
+         * middle and in the corner is the whole measurement. The flat patches
+         * are there to show that a flat area fringes not at all.
+         */
+        function testCard() {
+          const c = document.createElement('canvas');
+          c.width = 1200;
+          c.height = 800;
+          const g = c.getContext('2d');
+
+          g.fillStyle = '#f4f4f6';
+          g.fillRect(0, 0, 1200, 800);
+
+          // Siemens star in the middle, where the aberration is nothing.
+          g.fillStyle = '#111114';
+          for (let i = 0; i < 36; i += 2) {
+            g.beginPath();
+            g.moveTo(600, 400);
+            g.arc(600, 400, 90, (i * Math.PI) / 18, ((i + 1) * Math.PI) / 18);
+            g.closePath();
+            g.fill();
+          }
+
+          // Identical targets across the field. The middle column gives up
+          // its two rows: one to the star, one to the flat patches.
+          for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 5; col++) {
+              if (col === 2 && row !== 0) continue;
+              const x = 130 + col * 235;
+              const y = 130 + row * 270;
+              g.fillStyle = '#111114';
+              g.fillRect(x - 46, y - 46, 92, 92);
+              g.fillStyle = '#f4f4f6';
+              g.fillRect(x - 8, y - 38, 16, 76);
+              g.fillRect(x - 38, y - 8, 76, 16);
+              for (let k = 0; k < 4; k++) {
+                g.fillStyle = k % 2 ? '#111114' : '#f4f4f6';
+                g.fillRect(x - 46 + k * 12, y + 52, 12, 22);
+              }
+            }
+          }
+
+          // Flat patches, below the star: nothing here to fringe.
+          const patches = ['#c8352f', '#2f7bc8', '#2fa86a', '#d8b12f'];
+          for (let i = 0; i < patches.length; i++) {
+            g.fillStyle = patches[i];
+            g.fillRect(524 + (i % 2) * 78, 594 + Math.floor(i / 2) * 78, 76, 76);
+          }
+          return c;
+        }
+
+        function centreFromEvent(event) {
+          const box = view.getBoundingClientRect();
+          if (!box.width || !box.height) return;
+          dials.cx.value = Math.round(Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)) * 100);
+          dials.cy.value = Math.round(Math.min(1, Math.max(0, (event.clientY - box.top) / box.height)) * 100);
+          showDials();
+          if (!animateBox.checked) render();
+        }
+
+        document.getElementById('pick').addEventListener('click', () => file.click());
+        file.addEventListener('change', () => {
+          if (file.files && file.files[0]) load(file.files[0]);
+        });
+        document.getElementById('sample').addEventListener('click', () => useImage(testCard()));
+
+        document.getElementById('save').addEventListener('click', () => {
+          if (!loaded) return;
+          const a = document.createElement('a');
+          a.download = 'chromatic.png';
+          a.href = view.toDataURL('image/png');
+          a.click();
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+          for (const key of Object.keys(DEFAULTS)) dials[key].value = DEFAULTS[key];
+          showDials();
+          if (!animateBox.checked) render();
+        });
+
+        for (const dial of Object.values(dials)) {
+          dial.addEventListener('input', () => {
+            showDials();
+            if (!animateBox.checked) render();
+          });
+        }
+        diffBox.addEventListener('change', () => {
+          if (!animateBox.checked) render();
+        });
+        animateBox.addEventListener('change', pump);
+        view.addEventListener('click', centreFromEvent);
+
+        document.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          stage.classList.add('dragging');
+        });
+        document.addEventListener('dragleave', () => stage.classList.remove('dragging'));
+        document.addEventListener('drop', (e) => {
+          e.preventDefault();
+          stage.classList.remove('dragging');
+          const dropped = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (dropped) load(dropped);
+        });
+        document.addEventListener('paste', (e) => {
+          const items = e.clipboardData && e.clipboardData.files;
+          if (items && items[0]) load(items[0]);
+        });
+
+        showDials();
+        useImage(testCard());
+      })();
+    </script>
+  </body>
+</html>

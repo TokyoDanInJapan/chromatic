@@ -1,0 +1,22 @@
+{
+  "name": "chromatic",
+  "version": "1.0.0",
+  "description": "Chromatic aberration in the browser, by magnifying each colour channel by a different amount.",
+  "license": "MIT",
+  "author": "Daniel Hebberd",
+  "keywords": [
+    "chromatic-aberration",
+    "lens",
+    "dispersion",
+    "canvas",
+    "browser"
+  ],
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.0"
+  }
+}
