@@ -84,7 +84,7 @@ very fine subjects.
 
 ## Using chromatic.js directly
 
-`chromatic.js` sets `window.Chromatic` and depends on nothing. It is synchronous, because every step is a canvas
+`chromatic.js` sets `globalThis.Chromatic` and depends on nothing. It is synchronous, because every step is a canvas
 operation.
 
 ```js
@@ -111,6 +111,25 @@ here is reused between calls, so an animated effect allocates nothing per frame.
 
 **Feed it the original every time.** Aberrating your own output compounds, exactly as re-encoding a JPEG does. The demo
 keeps an untouched source canvas for this reason.
+
+### Installing it
+
+There is nothing to install to use the demo. To depend on it from a project, take a tag rather than a branch, so a later
+change here cannot reach a build that was not asking for it:
+
+```sh
+npm install "github:TokyoDanInJapan/chromatic#v1.0.0"
+```
+
+`chromatic.js` is still the source, and it is still a classic script. `index.js` is a wrapper over it for bundlers: it
+runs the script and republishes what the script sets on `globalThis`, so both of these give you the same object.
+
+```js
+import { aberrate, supports } from 'chromatic';
+import Chromatic from 'chromatic';
+```
+
+The package is not on npm, and `private` is set so it cannot be pushed there by accident.
 
 ### Where the platform can let you down
 

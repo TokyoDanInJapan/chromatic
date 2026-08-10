@@ -25,7 +25,9 @@
  *
  * This is a classic script rather than a module on purpose: a module cannot
  * be loaded over `file://`, and being able to open the demo by
- * double-clicking it is worth more than the syntax.
+ * double-clicking it is worth more than the syntax. `index.js` is a module
+ * wrapper for bundlers, and it is a wrapper rather than the source for the
+ * same reason.
  *
  * No dependencies. Browser only - it needs the platform's resampler and the
  * platform's blur, which is rather the point.
@@ -314,4 +316,4 @@
     aberrate,
     spreadOf,
   };
-})(window);
+})(globalThis);
